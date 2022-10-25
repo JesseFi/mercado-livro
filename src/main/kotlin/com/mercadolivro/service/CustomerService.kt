@@ -1,46 +1,41 @@
 package com.mercadolivro.service
 
-import com.mercadolivro.controller.request.PostCustomerRequest
-import com.mercadolivro.controller.request.PutCustomerRequest
 import com.mercadolivro.model.CustomerModel
-import org.springframework.http.HttpStatus
+import com.mercadolivro.repository.CustomerRepository
 import org.springframework.stereotype.Service
-import org.springframework.web.bind.annotation.*
 
 @Service
-class CustomerService {
+class CustomerService(
+    val customerRespository: CustomerRepository
+) {
     val customers = mutableListOf<CustomerModel>();
 
     fun getAll(name: String?): List<CustomerModel> {
         name?.let {
-            return customers.filter { it.name.contains(name, true) }
+            return customerRespository.findByNameContaining(name)
         }
-        return customers
+        return customerRespository.findAll().toList();
     }
 
-    fun create(customer: PostCustomerRequest) {
-
-        val id = if (customers.isEmpty()) {
-            1;
-        } else {
-            customers.last().id.toInt() + 1;
-        }.toString();
-
-        customers.add(CustomerModel(id, customer.name, customer.email));
+    fun create(customer: CustomerModel) {
+        customerRespository.save(customer);
     }
 
-    fun getCustomer(id: String): CustomerModel? {
-        return customers.filter { it.id == id }.first();
+    fun getCustomer(id: Int): CustomerModel {
+        return customerRespository.findById(id).get();
     }
 
-    fun update(id: String, customer: PutCustomerRequest) {
-        customers.filter { it.id == id }.first().let {
-            it.name = customer.name
-            it.email= customer.email
-        };
+    fun update(customer: CustomerModel) {
+        if (!customerRespository.existsById(customer.id!!)) {
+            throw Exception();
+        }
+        customerRespository.save(customer);
     }
 
-    fun delete(id: String) {
-        customers.removeIf { it.id == id };
+    fun delete(id: Int) {
+        if (!customerRespository.existsById(id)) {
+            throw Exception();
+        }
+        customerRespository.deleteById(id);
     }
 }
